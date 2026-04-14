@@ -1,7 +1,14 @@
 import * as THREE from 'three/webgpu';
-import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import { Inspector } from 'three/addons/inspector/Inspector.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// vite fa da bundler + hash alfanumerico -> ottimizzazine 
+import modelURL from '../assets/Untitled.glb?url'; // ?url e' per includere file nel bundle finale
 
 import './main.css';
+
+
+const myWP = new THREE.Vector3();
 
 const main = async () => {
     /* Creazione elemento "app" */
@@ -39,6 +46,15 @@ const main = async () => {
     const gridHelper = new THREE.GridHelper(10, 10);
     scene.add(gridHelper);
 
+    // se voglio trasformare pos locale devo usare 
+    // molto expensive, parte dal fondo per calcolare tutto 
+    // per questo non esiste direttamente in cube 
+    cube.getWorldPosition(cube.position);
+    
+    // non creare oggetti nuovi dentro ogni frame
+    // calcola prima vettori e poi inserisce oggetto gia' esistente dentr lo space
+
+
     /* Inspector (ANCORA SPERIMENTALE) va inizializzato dopo che la scena e il renderer sono pronti */
     // const inspector = new Inspector();
     // container.appendChild(inspector.domElement);
@@ -57,6 +73,9 @@ const main = async () => {
         // inspector.finish();
     });
 
+    const loader = new GLTFLoader();
+    const model = await loader.loadAsync(modelURL);
+    scene.add(model.scene);
 
     const onResize = () => {
         const width = window.innerWidth;
