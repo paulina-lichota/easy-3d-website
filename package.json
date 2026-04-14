@@ -1,0 +1,30 @@
+{
+  "name": "monogrid_day_1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paulina-lichota/easy-3d-website.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/paulina-lichota/easy-3d-website/issues"
+  },
+  "homepage": "https://github.com/paulina-lichota/easy-3d-website#readme",
+  "devDependencies": {
+    "@types/three": "^0.183.1",
+    "eslint": "^9.39.4",
+    "neostandard": "^0.13.0",
+    "vite": "^8.0.8"
+  },
+  "dependencies": {
+    "three": "^0.183.2"
+  }
+}
