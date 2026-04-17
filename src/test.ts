@@ -5,6 +5,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // vite fa da bundler + hash alfanumerico -> ottimizzazine 
 import modelURL from '../assets/Untitled.glb?url'; // ?url e' per includere file nel bundle finale
 
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+
 import './main.css';
 
 
@@ -17,17 +20,23 @@ const main = async () => {
     const renderer = new THREE.WebGPURenderer({ });
     await renderer.init();
 
-
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 5, 5);
     camera.lookAt(0, 0, 0);
 
-    const geometry = new THREE.BoxGeometry(1, 1, 2);
     /* Mesh = geometria + materiale */
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+
+    // const geometry = new THREE.BoxGeometry(1, 1, 2);
+    // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    // const cube = new THREE.Mesh(geometry, material);
+    // scene.add(cube);
+
+
+    /* Carica modello */
+    const loader = new GLTFLoader();
+    const model = await loader.loadAsync(modelURL);
+    scene.add(model.scene);
 
     // /* Ambient light, simuliamo riflessione ambientale della luce */
     // scene.add(new THREE.AmbientLight(0x404040));
@@ -38,22 +47,24 @@ const main = async () => {
     scene.add(directionalLight);
 
     /* Axes helper */
-    const axesHelper = new THREE.AxesHelper(5);
-    axesHelper.position.set(0, 0, 0);
-    scene.add(axesHelper);
+    // const axesHelper = new THREE.AxesHelper(5);
+    // axesHelper.position.set(0, 0, 0);
+    // scene.add(axesHelper);
 
     /* Grid helper */
-    const gridHelper = new THREE.GridHelper(10, 10);
-    scene.add(gridHelper);
+    // const gridHelper = new THREE.GridHelper(10, 10);
+    // scene.add(gridHelper);
+
+    // add orbit controls
+    const controls = new OrbitControls(camera, renderer.domElement);
 
     // se voglio trasformare pos locale devo usare 
     // molto expensive, parte dal fondo per calcolare tutto 
     // per questo non esiste direttamente in cube 
-    cube.getWorldPosition(cube.position);
+    // cube.getWorldPosition(cube.position);
     
     // non creare oggetti nuovi dentro ogni frame
     // calcola prima vettori e poi inserisce oggetto gia' esistente dentr lo space
-
 
     /* Inspector (ANCORA SPERIMENTALE) va inizializzato dopo che la scena e il renderer sono pronti */
     // const inspector = new Inspector();
@@ -62,20 +73,33 @@ const main = async () => {
     /* Per misurare il tempo di rendering */
     const timer = new THREE.Timer();
 
+    let delta_y = 0;
+    let speed = 2;
+
     /* il browser e' cappato a 60fps */
     renderer.setAnimationLoop(() => {
         // inspector.begin();
         timer.update();
         const delta = timer.getDelta();
-        cube.rotation.y += 1 * delta; // delta normalizza la velocita'
+        //cube.rotation.y += 1 * delta; // delta normalizza la velocita'
+        model.scene.rotation.y += 1 * delta;
+        delta_y += delta;
+        model.scene.position.y = Math.sin(delta_y * speed) * 0.5;
         // cube.rotation.y += 0.1;
         renderer.render(scene, camera);
         // inspector.finish();
     });
 
-    const loader = new GLTFLoader();
-    const model = await loader.loadAsync(modelURL);
-    scene.add(model.scene);
+
+
+
+    /* carica background */
+    const loader_bg = new EXRLoader();
+    loader_bg.load('assets/ferndale_studio_06_4k.exr', function (texture) {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.background = texture;
+      scene.environment = texture;
+    });
 
     const onResize = () => {
         const width = window.innerWidth;
