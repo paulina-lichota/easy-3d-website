@@ -33,6 +33,10 @@ const main = async () => {
     camera.position.set(0, 5, 5);
     camera.lookAt(0, 0, 0);
 
+    // colore, distanza dove inizia, distanza dove è completa
+    // scene.fog = new THREE.Fog(0xcccccc, 10, 50);
+    // scene.fog = new THREE.FogExp2(0xcccccc, 0.02);
+
     // Crea il post-processing per il bloom
     const postProcessing = new THREE.PostProcessing(renderer);
     // Scene pass
