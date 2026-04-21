@@ -33,15 +33,28 @@ const main = async () => {
     camera.position.set(0, 5, 5);
     camera.lookAt(0, 0, 0);
 
-    // Crea il post-processing
+    // Crea il post-processing per il bloom
     const postProcessing = new THREE.PostProcessing(renderer);
     // Scene pass
     const scenePass = pass(scene, camera);
-    const scenePassColor = scenePass.getTextureNode('output');
     
-    /* bloom */
-    const bloomPass = bloom(scenePassColor, 0.5, 0.5, 0.0);
-    postProcessing.outputNode = scenePassColor.add(bloomPass);
+    /* bloom (ALL canvas) */
+    // const scenePassColor = scenePass.getTextureNode('output');
+    // const bloomPass = bloom(scenePassColor, 0.5, 0.5, 0.0);
+    // postProcessing.outputNode = scenePassColor.add(bloomPass);
+
+    /* bloom (ONLY MODEL) */
+    // Definisci due output: colore normale + emissive
+    scenePass.setMRT(mrt({
+        output: output,
+        emissive: emissive
+    }));
+
+    const scenePassColor = scenePass.getTextureNode('output');
+    const scenePassEmissive = scenePass.getTextureNode('emissive');
+
+    // Bloom SOLO sul canale emissive
+    const bloomPass = bloom(scenePassEmissive, 2.5, 0.5, 0.0);
 
     /* Mesh = geometria + materiale */
     // const geometry = new THREE.BoxGeometry(1, 1, 2);
@@ -53,6 +66,23 @@ const main = async () => {
     const loader = new GLTFLoader();
     const model = await loader.loadAsync(modelURL);
     scene.add(model.scene);
+
+    // Bloom sul modello
+    model.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+            child.material.emissive = new THREE.Color(0x00ffff);
+            child.material.emissiveIntensity = 0.1;
+        }
+    });
+
+    // Bloom sul Mesh specifiche
+    // model.scene.traverse((child) => {
+    //     if (child.isMesh) {
+    //         // Esempio: fai brillare tutto il modello
+    //         child.material.emissive = new THREE.Color(0x00ffff);
+    //         child.material.emissiveIntensity = 2;
+    //     }
+    // });
 
     // /* Ambient light, simuliamo riflessione ambientale della luce */
     // scene.add(new THREE.AmbientLight(0x404040));
@@ -74,7 +104,11 @@ const main = async () => {
     // add orbit controls
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    // Componi output finale: colore scena + bloom
+    
+    // (PER BLOOM SU TUTTA LA SCENA) Componi output finale: colore scena + bloom
+    // postProcessing.outputNode = scenePassColor.add(bloomPass);
+
+    // (PER BLOOM SOLO SU MODELLO) Componi output finale: colore scena + bloom (solo su emissive)
     postProcessing.outputNode = scenePassColor.add(bloomPass);
 
     // fly controls
