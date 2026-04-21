@@ -5,7 +5,12 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // vite fa da bundler + hash alfanumerico -> ottimizzazine 
 import modelURL from '../assets/Untitled.glb?url'; // ?url e' per includere file nel bundle finale
 
+/* Bloom */
+import { pass, mrt, output, emissive } from 'three/tsl';
+import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// import { FlyControls } from 'three/addons/controls/FlyControls.js';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 
 import './main.css';
@@ -18,6 +23,9 @@ const main = async () => {
     const container = document.createElement('app');
 
     const renderer = new THREE.WebGPURenderer({ });
+    // const renderer = new THREE.WebGLRenderer({ antialias: true });
+    
+    // renderer.toneMapping = THREE.ACESFilmicToneMapping;
     await renderer.init();
 
     const scene = new THREE.Scene();
@@ -25,13 +33,21 @@ const main = async () => {
     camera.position.set(0, 5, 5);
     camera.lookAt(0, 0, 0);
 
-    /* Mesh = geometria + materiale */
+    // Crea il post-processing
+    const postProcessing = new THREE.PostProcessing(renderer);
+    // Scene pass
+    const scenePass = pass(scene, camera);
+    const scenePassColor = scenePass.getTextureNode('output');
+    
+    /* bloom */
+    const bloomPass = bloom(scenePassColor, 0.5, 0.5, 0.0);
+    postProcessing.outputNode = scenePassColor.add(bloomPass);
 
+    /* Mesh = geometria + materiale */
     // const geometry = new THREE.BoxGeometry(1, 1, 2);
     // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     // const cube = new THREE.Mesh(geometry, material);
     // scene.add(cube);
-
 
     /* Carica modello */
     const loader = new GLTFLoader();
@@ -57,6 +73,15 @@ const main = async () => {
 
     // add orbit controls
     const controls = new OrbitControls(camera, renderer.domElement);
+
+    // Componi output finale: colore scena + bloom
+    postProcessing.outputNode = scenePassColor.add(bloomPass);
+
+    // fly controls
+    // const flyControls = new FlyControls(camera, renderer.domElement);
+
+    // pannning controls
+    // const panControls = new OrbitControls(camera, renderer.domElement);
 
     // se voglio trasformare pos locale devo usare 
     // molto expensive, parte dal fondo per calcolare tutto 
@@ -86,12 +111,12 @@ const main = async () => {
         delta_y += delta;
         model.scene.position.y = Math.sin(delta_y * speed) * 0.5;
         // cube.rotation.y += 0.1;
-        renderer.render(scene, camera);
+        
+        // renderer.render(scene, camera);
+        postProcessing.renderAsync();
+
         // inspector.finish();
     });
-
-
-
 
     /* carica background */
     const loader_bg = new EXRLoader();
@@ -101,6 +126,7 @@ const main = async () => {
       scene.environment = texture;
     });
 
+    // create animations
     const onResize = () => {
         const width = window.innerWidth;
         const height = window.innerHeight;
